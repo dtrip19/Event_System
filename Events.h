@@ -1,12 +1,13 @@
 #pragma once
 #include <vector>
 #include <functional>
+#include <iostream>
 
 template <typename... params>
 class Event;
 
 template <typename... params>
-class EventListener
+class EventListener //Do not declare a listener who's function deletes itself
 {
 public:
 
@@ -28,23 +29,24 @@ class Event
 public:
 
 	void Invoke(params... args) {
-		for (size_t i = 0; i < eventListeners.size(); i++)
-		{		
-			if (eventListeners.at(i)) {
-				eventListeners.at(i)->Trigger(args...);
-			} 
+		for (auto& eventListener : eventListeners)
+		{
+			if (eventListener) {
+				eventListener->Trigger(args...);
+			}
 		}
 	}
 
-	void AddListener(EventListener<params...>* newListener) {
+	EventListener<params...>* AddListener(EventListener<params...>* newListener) {
 		eventListeners.push_back(newListener);
 		newListener->subscribedEvents.push_back(this);
+		return newListener;
 	}
 
 	void RemoveListener(EventListener<params...>* listenerToRemove) {
 		for (int i = eventListeners.size() - 1; i >= 0; i--)
 		{
-			if (eventListeners.at(i) == listenerToRemove) {
+			if (eventListeners[i] == listenerToRemove) {
 				eventListeners.erase(eventListeners.begin() + i);
 				break;
 			}
@@ -54,7 +56,7 @@ public:
 	void CompletelyRemoveListener(EventListener<params...>* listenerToRemove) {
 		for (int i = eventListeners.size() - 1; i >= 0; i--)
 		{
-			if (eventListeners.size() != 0 && eventListeners.at(i) == listenerToRemove) {
+			if (eventListeners.size() != 0 && eventListeners[i] == listenerToRemove) {
 				eventListeners.erase(eventListeners.begin() + i);
 			}
 		}
@@ -63,8 +65,8 @@ public:
 
 template <typename... params>
 EventListener<params...>::~EventListener() {
-	for (size_t i = 0; i < subscribedEvents.size(); i++)
+	for (auto& event : subscribedEvents)
 	{
-		subscribedEvents.at(i)->CompletelyRemoveListener(this);
+		event->CompletelyRemoveListener(this);
 	}
 }
